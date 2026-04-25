@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV Pro — Editor IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+/* ─────────────────────────────────────────
+   RESET & TOKENS
+───────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0a0a10;
+  --ink2:#111118;
+  --surface:#16161f;
+  --surface2:#1d1d28;
+  --surface3:#242432;
+  --line:#2c2c3e;
+  --line2:#363650;
+  --gold:#d4a853;
+  --gold2:#f0c96a;
+  --glow:rgba(212,168,83,.14);
+  --body:#e2e2ee;
+  --muted:#6a6a88;
+  --muted2:#9898b4;
+  --green:#3ecf7a;
+  --red:#e55;
+  --r:10px;
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Sora',sans-serif;
+  background:var(--ink);
+  color:var(--body);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+/* subtle animated bg */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 5% 5%,rgba(212,168,83,.07) 0%,transparent 60%),
+    radial-gradient(ellipse 40% 40% at 95% 95%,rgba(80,80,200,.05) 0%,transparent 60%);
+}
+
+/* ─────────────────────────────────────────
+   HEADER
+───────────────────────────────────────── */
+header{
+  position:relative;z-index:30;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 36px;
+  background:rgba(10,10,16,.96);
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(20px);
+}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-gem{
+  width:34px;height:34px;border-radius:8px;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;box-shadow:0 4px 14px rgba(212,168,83,.3);
+}
+.logo-text{font-family:'Playfair Display',serif;font-size:18px;font-weight:700}
+.logo-text em{color:var(--gold);font-style:normal}
+.hbadge{
+  font-size:9.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--gold);border:1px solid rgba(212,168,83,.3);padding:4px 11px;
+  border-radius:100px;background:rgba(212,168,83,.06);
+}
+
+/* ─────────────────────────────────────────
+   APP SHELL
+───────────────────────────────────────── */
+.app{
+  position:relative;z-index:1;
+  display:grid;
+  grid-template-columns:400px 1fr;
+  height:calc(100vh - 57px);
+}
+
+/* ─────────────────────────────────────────
+   LEFT SIDEBAR
+───────────────────────────────────────── */
+.sidebar{
+  background:var(--surface);
+  border-right:1px solid var(--line);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:1px solid var(--line);flex-shrink:0}
+.tab{
+  flex:1;padding:11px 4px;
+  font-family:'Sora',sans-serif;font-size:11px;font-weight:600;
+  color:var(--muted);cursor:pointer;
+  border:none;border-bottom:2px solid transparent;
+  background:none;transition:all .2s;text-align:center;
+}
+.tab:hover{color:var(--body)}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);background:rgba(212,168,83,.04)}
+
+/* Panels */
+.panel{flex:1;overflow-y:auto;display:none;flex-direction:column}
+.panel.active{display:flex}
+.panel::-webkit-scrollbar{width:3px}
+.panel::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+.pi{padding:20px;flex:1;display:flex;flex-direction:column;gap:0}
+
+/* Section labels */
+.slabel{
+  font-size:8.5px;font-weight:800;letter-spacing:3px;text-transform:uppercase;
+  color:var(--gold);margin:18px 0 9px;
+  display:flex;align-items:center;gap:8px;
+}
+.slabel::after{content:'';flex:1;height:1px;background:var(--line)}
+.slabel:first-child{margin-top:0}
+
+/* Fields */
+.fg{margin-bottom:9px}
+.fg label{display:block;font-size:10.5px;color:var(--muted2);margin-bottom:3px;font-weight:500}
+input[type=text],input[type=email],input[type=tel],input[type=password],textarea,select{
+  width:100%;background:var(--surface2);border:1px solid var(--line);
+  border-radius:7px;padding:8px 11px;color:var(--body);
+  font-family:'Sora',sans-serif;font-size:12px;
+  outline:none;transition:border-color .18s,box-shadow .18s;appearance:none;
+}
+input:focus,textarea:focus,select:focus{
+  border-color:var(--gold);box-shadow:0 0 0 3px var(--glow);
+}
+input::placeholder,textarea::placeholder{color:var(--muted)}
+textarea{resize:vertical;line-height:1.55;min-height:70px}
+select option{background:var(--surface2)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* Photo */
+.photo-zone{
+  border:2px dashed var(--line);border-radius:9px;padding:14px;
+  text-align:center;cursor:pointer;transition:all .2s;
+}
+.photo-zone:hover{border-color:var(--gold);background:var(--glow)}
+#photo-prev{
+  width:60px;height:60px;border-radius:50%;object-fit:cover;
+  margin:0 auto 7px;display:none;border:2px solid var(--gold);
+}
+.pz-ico{font-size:22px;margin-bottom:5px}
+.pz-txt{font-size:10.5px;color:var(--muted2)}
+input[type=file]{display:none}
+
+/* Dynamic entries */
+.dentry{
+  background:var(--surface2);border:1px solid var(--line);
+  border-radius:8px;padding:10px;position:relative;
+  margin-bottom:7px;animation:slideIn .22s ease;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.dentry .xbtn{
+  position:absolute;top:7px;right:7px;background:none;border:none;
+  color:var(--red);cursor:pointer;font-size:13px;opacity:.45;
+  transition:opacity .18s;padding:1px 4px;border-radius:3px;
+}
+.dentry .xbtn:hover{opacity:1;background:rgba(238,85,85,.1)}
+.dentry input,.dentry textarea{margin-bottom:5px;font-size:11.5px;padding:6px 10px}
+.dentry input:last-child,.dentry textarea:last-child{margin-bottom:0}
+
+.addbtn{
+  width:100%;background:rgba(212,168,83,.05);
+  border:1px dashed rgba(212,168,83,.38);border-radius:7px;
+  color:var(--gold);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;
+  padding:8px;cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  margin-top:3px;letter-spacing:.5px;
+}
+.addbtn:hover{background:rgba(212,168,83,.12);border-style:solid}
+
+/* Skill chips */
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.chip{
+  background:rgba(212,168,83,.09);border:1px solid rgba(212,168,83,.22);
+  border-radius:100px;padding:3px 9px;font-size:11px;color:var(--gold2);
+  display:flex;align-items:center;gap:4px;
+}
+.chip button{background:none;border:none;color:inherit;cursor:pointer;font-size:11px;padding:0;opacity:.45;transition:opacity .18s}
+.chip button:hover{opacity:1}
+.skillrow{display:flex;gap:6px}
+.skillrow input{flex:1}
+.skillrow button{
+  background:var(--gold);border:none;border-radius:7px;
+  color:#000;font-weight:800;padding:0 13px;cursor:pointer;
+  font-size:15px;transition:background .18s;
+}
+.skillrow button:hover{background:var(--gold2)}
+
+/* Template cards */
+.tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:13px}
+.tcard{
+  background:var(--surface2);border:2px solid var(--line);
+  border-radius:8px;padding:10px 6px;text-align:center;cursor:pointer;transition:all .2s;
+}
+.tcard:hover{border-color:var(--gold);transform:translateY(-2px)}
+.tcard.active{border-color:var(--gold);background:rgba(212,168,83,.07)}
+.tc-i{font-size:18px;margin-bottom:4px}
+.tc-n{font-size:10.5px;font-weight:700}
+.tc-d{font-size:9.5px;color:var(--muted2);margin-top:1px}
+
+/* Color swatches */
+.swatches{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:13px}
+.swatch{
+  width:24px;height:24px;border-radius:50%;cursor:pointer;
+  border:2px solid transparent;transition:all .2s;
+}
+.swatch:hover,.swatch.active{border-color:#fff;transform:scale(1.18)}
+
+/* API box */
+.apibox{background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:14px;margin-bottom:10px}
+.kw{position:relative;margin-bottom:9px}
+.kw input{padding-right:38px;font-family:monospace;font-size:11.5px;letter-spacing:.5px}
+.kw button{position:absolute;right:9px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;transition:color .18s}
+.kw button:hover{color:var(--body)}
+.api-note{font-size:10px;color:var(--muted);line-height:1.6;margin-top:7px}
+.api-note a{color:var(--gold)}
+
+/* Info card */
+.info-card{
+  background:linear-gradient(135deg,rgba(212,168,83,.08),rgba(80,80,200,.04));
+  border:1px solid rgba(212,168,83,.18);border-radius:10px;
+  padding:13px;margin-bottom:15px;
+}
+.info-card h3{font-size:12px;font-weight:700;color:var(--gold);margin-bottom:5px}
+.info-card p{font-size:10.5px;line-height:1.7;color:var(--muted2)}
+.info-card ul{margin:5px 0 0 14px;font-size:10.5px;color:var(--muted2);line-height:1.8}
+
+.expills{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.epill{
+  font-size:10.5px;color:var(--gold);
+  border:1px solid rgba(212,168,83,.22);padding:3px 9px;
+  border-radius:100px;cursor:pointer;background:rgba(212,168,83,.05);
+  transition:all .2s;
+}
+.epill:hover{background:rgba(212,168,83,.14)}
+
+.bigta{
+  width:100%;flex:1;min-height:210px;
+  background:var(--surface2);border:1px solid var(--line);
+  border-radius:10px;padding:12px;color:var(--body);
+  font-family:'Sora',sans-serif;font-size:12px;line-height:1.7;
+  resize:none;outline:none;transition:border-color .18s,box-shadow .18s;
+}
+.bigta:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--glow)}
+.bigta::placeholder{color:var(--muted)}
+.charcount{font-size:10px;color:var(--muted);text-align:right;margin-top:3px}
+
+.parsed-box{
+  background:var(--surface2);border:1px solid rgba(212,168,83,.2);
+  border-radius:9px;padding:13px;margin-top:12px;display:none;
+}
+.parsed-box.active{display:block;animation:slideIn .25s ease}
+.prow{margin-bottom:8px}
+.pkey{font-size:8px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);margin-bottom:2px}
+.pval{font-size:11px;color:#aaabb8;line-height:1.6}
+.pval ul{margin-left:12px}
+.pnote{font-size:10px;color:var(--muted);margin-top:8px;font-style:italic}
+
+/* ─────────────────────────────────────────
+   ACTION BAR
+───────────────────────────────────────── */
+.abar{
+  padding:13px 20px;border-top:1px solid var(--line);
+  background:var(--surface);flex-shrink:0;
+  display:flex;flex-direction:column;gap:7px;
+}
+.btn-gen{
+  width:100%;background:linear-gradient(135deg,var(--gold),var(--gold2));
+  border:none;border-radius:9px;color:#0a0a10;
+  font-family:'Sora',sans-serif;font-size:13px;font-weight:800;
+  padding:12px;cursor:pointer;transition:all .25s;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.btn-gen:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(212,168,83,.35)}
+.btn-gen:active{transform:none}
+.btn-gen:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-sec{
+  width:100%;background:transparent;border:1px solid var(--line);
+  border-radius:9px;color:var(--body);
+  font-family:'Sora',sans-serif;font-size:12px;font-weight:600;
+  padding:10px;cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.btn-sec:hover{border-color:var(--gold);color:var(--gold)}
+.statusbar{font-size:11px;padding:8px 11px;border-radius:7px;display:none;align-items:center;gap:7px}
+.statusbar.show{display:flex}
+.statusbar.ok{background:rgba(62,207,122,.09);border:1px solid rgba(62,207,122,.25);color:var(--green)}
+.statusbar.err{background:rgba(238,85,85,.09);border:1px solid rgba(238,85,85,.25);color:var(--red)}
+.statusbar.ld{background:rgba(212,168,83,.07);border:1px solid rgba(212,168,83,.2);color:var(--gold)}
+.spin{width:12px;height:12px;border:2px solid rgba(212,168,83,.3);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;display:none}
+.spin.show{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ─────────────────────────────────────────
+   RIGHT / CANVAS
+───────────────────────────────────────── */
+.canvas-wrap{
+  background:#111118;overflow-y:auto;
+  display:flex;flex-direction:column;align-items:center;
+  padding:24px;gap:14px;
+}
+.canvas-wrap::-webkit-scrollbar{width:5px}
+.canvas-wrap::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+
+/* Canvas header */
+.cvhdr{
+  width:100%;max-width:840px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.cvhdr-title{font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted)}
+.cvhdr-actions{display:flex;gap:7px}
+.hbtn{
+  background:var(--surface2);border:1px solid var(--line);border-radius:7px;
+  color:var(--muted2);font-family:'Sora',sans-serif;font-size:10.5px;font-weight:600;
+  padding:6px 11px;cursor:pointer;transition:all .2s;
+}
+.hbtn:hover{border-color:var(--gold);color:var(--gold)}
+.hbtn.gold{background:linear-gradient(135deg,var(--gold),var(--gold2));border-color:transparent;color:#000;font-weight:800}
+.hbtn.gold:hover{opacity:.9;transform:translateY(-1px)}
+.hbtn.edit-on{background:rgba(212,168,83,.12);border-color:var(--gold);color:var(--gold)}
+
+/* Editor toolbar */
+.toolbar{
+  width:100%;max-width:840px;
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:9px;padding:8px 13px;
+  display:none;align-items:center;flex-wrap:wrap;gap:6px;
+}
+.toolbar.show{display:flex}
+.tb-sep{width:1px;height:18px;background:var(--line2)}
+.tb-group{display:flex;align-items:center;gap:4px}
+.tblbl{font-size:8.5px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-right:2px}
+.tbtn{
+  background:none;border:1px solid var(--line);border-radius:5px;
+  color:var(--muted2);font-family:'Sora',sans-serif;font-size:11px;
+  padding:4px 8px;cursor:pointer;transition:all .18s;
+}
+.tbtn:hover{border-color:var(--gold);color:var(--gold)}
+.tbtn.on{background:rgba(212,168,83,.12);border-color:var(--gold);color:var(--gold)}
+.tbtn-color{
+  width:22px;height:22px;border-radius:4px;border:1px solid var(--line);
+  cursor:pointer;padding:0;overflow:hidden;
+}
+
+/* Placeholder */
+.cv-placeholder{
+  width:100%;max-width:840px;aspect-ratio:210/297;
+  background:var(--surface);border:1px dashed var(--line2);
+  border-radius:var(--r);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:11px;color:var(--muted);
+}
+.cv-placeholder-ico{font-size:44px;opacity:.25}
+
+/* CV wrapper */
+#cv-output{width:100%;max-width:840px;display:none}
+#cv-output .cv-shell{
+  width:794px;
+  margin:0 auto 20px;
+  box-shadow:0 20px 60px rgba(0,0,0,.7);
+  border-radius:2px;
+  overflow:hidden;
+}
+
+/* Edit highlights */
+.cv-shell [contenteditable=true]{
+  outline:none;cursor:text;
+  border-radius:2px;transition:background .15s;
+  min-width:10px;display:inline-block;
+}
+.cv-shell [contenteditable=true]:hover{background:rgba(212,168,83,.1)!important}
+.cv-shell [contenteditable=true]:focus{background:rgba(212,168,83,.18)!important;outline:1px dashed rgba(212,168,83,.5)}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:20px;right:20px;
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:9px;padding:10px 14px;font-size:11.5px;
+  display:flex;align-items:center;gap:7px;
+  transform:translateY(60px);opacity:0;
+  transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  z-index:9999;max-width:270px;
+  box-shadow:0 10px 36px rgba(0,0,0,.5);
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-color:rgba(62,207,122,.35)}
+.toast.err{border-color:rgba(238,85,85,.35)}
+
+@media(max-width:1050px){.app{grid-template-columns:340px 1fr}}
+@media(max-width:760px){.app{grid-template-columns:1fr;height:auto}.sidebar{max-height:none}}
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header>
+  <div class="logo">
+    <div class="logo-gem">✦</div>
+    <div class="logo-text">CV<em>Pro</em></div>
+  </div>
+  <div class="hbadge">✨ Editor con IA</div>
+</header>
+
+<!-- ═══ APP ═══ -->
+<div class="app">
+
+  <!-- ════ SIDEBAR ════ -->
+  <aside class="sidebar">
+
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('ia',this)">🪄 IA</button>
+      <button class="tab" onclick="showTab('manual',this)">✏️ Manual</button>
+      <button class="tab" onclick="showTab('diseno',this)">🎨 Diseño</button>
+      <button class="tab" onclick="showTab('config',this)">⚙️ Config</button>
+    </div>
+
+    <!-- ── PANEL IA ── -->
+    <div class="panel active" id="p-ia">
+      <div class="pi">
+        <div class="info-card">
+          <h3>🪄 Pega tu info — la IA lo estructura</h3>
+          <p>Escribe todo en cualquier orden, idioma o formato. La IA extrae, estructura y redacta tu CV profesionalmente. Luego puedes editarlo como en Canva.</p>
+          <ul>
+            <li>Sin formato específico requerido</li>
+            <li>Cuanta más info, mejor resultado</li>
+            <li>Pon tu API Key en ⚙️ Config</li>
+          </ul>
+        </div>
+
+        <div style="margin-bottom:9px">
+          <div style="font-size:10px;color:var(--muted2);margin-bottom:5px">Cargar ejemplo rápido:</div>
+          <div class="expills">
+            <div class="epill" onclick="loadEx('min')">📋 Básico</div>
+            <div class="epill" onclick="loadEx('det')">📄 Completo</div>
+            <div class="epill" onclick="loadEx('mes')">🗒️ Desordenado</div>
+          </div>
+        </div>
+
+        <textarea class="bigta" id="ia-text" oninput="updCC()"
+          placeholder="Pega aquí toda tu info...&#10;&#10;Ej:&#10;Soy Ana García, PM Senior en Madrid.&#10;Email: ana@email.com | Tel: 666 000 111&#10;Trabajo en TechCorp desde 2021.&#10;Antes 2 años en StartupXYZ (2019-21).&#10;Estudié ADE en UAM (2015-19).&#10;Inglés C1, Figma, SQL, Jira."></textarea>
+        <div class="charcount"><span id="cc">0</span> caracteres</div>
+
+        <div class="parsed-box" id="parsed-box">
+          <div id="parsed-inner"></div>
+          <div class="pnote">💡 Haz click en cualquier texto del CV para editarlo directamente.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PANEL MANUAL ── -->
+    <div class="panel" id="p-manual">
+      <div class="pi">
+        <div class="slabel">📷 Foto de perfil</div>
+        <div class="fg">
+          <div class="photo-zone" onclick="document.getElementById('photo-file').click()">
+            <img id="photo-prev" alt="">
+            <div id="photo-ph"><div class="pz-ico">📷</div><div class="pz-txt">Click para subir · JPG o PNG</div></div>
+          </div>
+          <input type="file" id="photo-file" accept="image/*" onchange="handlePhoto(event)">
+        </div>
+
+        <div class="slabel">👤 Datos personales</div>
+        <div class="g2">
+          <div class="fg"><label>Nombre completo</label><input type="text" id="m-name" placeholder="Ana García"></div>
+          <div class="fg"><label>Título profesional</label><input type="text" id="m-title" placeholder="PM Senior"></div>
+        </div>
+        <div class="g2">
+          <div class="fg"><label>Email</label><input type="email" id="m-email" placeholder="ana@email.com"></div>
+          <div class="fg"><label>Teléfono</label><input type="tel" id="m-phone" placeholder="+34 600 000 000"></div>
+        </div>
+        <div class="g2">
+          <div class="fg"><label>Ubicación</label><input type="text" id="m-loc" placeholder="Madrid, España"></div>
+          <div class="fg"><label>LinkedIn / Web</label><input type="text" id="m-web" placeholder="linkedin.com/in/ana"></div>
+        </div>
+        <div class="fg"><label>Perfil profesional</label><textarea id="m-profile" rows="3" placeholder="Breve descripción de tu trayectoria..."></textarea></div>
+
+        <div class="slabel">💼 Experiencia</div>
+        <div id="exp-list"></div>
+        <button class="addbtn" onclick="addExp()">＋ Agregar experiencia</button>
+
+        <div class="slabel">🎓 Educación</div>
+        <div id="edu-list"></div>
+        <button class="addbtn" onclick="addEdu()">＋ Agregar educación</button>
+
+        <div class="slabel">⚡ Habilidades</div>
+        <div class="skillrow">
+          <input type="text" id="skill-input" placeholder="Escribir habilidad..."
+            onkeypress="if(event.key==='Enter'){event.preventDefault();addSkill()}">
+          <button onclick="addSkill()">+</button>
+        </div>
+        <div class="chips" id="skill-chips"></div>
+      </div>
+    </div>
+
+    <!-- ── PANEL DISEÑO ── -->
+    <div class="panel" id="p-diseno">
+      <div class="pi">
+        <div class="slabel" style="margin-top:0">🎨 Plantilla</div>
+        <div class="tgrid">
+          <div class="tcard active" onclick="setTmpl('formal',this)">
+            <div class="tc-i">🏛️</div><div class="tc-n">Formal</div><div class="tc-d">Clásico</div>
+          </div>
+          <div class="tcard" onclick="setTmpl('creative',this)">
+            <div class="tc-i">🎨</div><div class="tc-n">Creativo</div><div class="tc-d">Vibrante</div>
+          </div>
+          <div class="tcard" onclick="setTmpl('executive',this)">
+            <div class="tc-i">💎</div><div class="tc-n">Ejecutivo</div><div class="tc-d">Premium</div>
+          </div>
+        </div>
+
+        <div class="slabel">🎨 Color de acento</div>
+        <div class="swatches" id="swatches">
+          <div class="swatch active" style="background:#c9a84c" onclick="setColor('#c9a84c','#9a7d38',this)" title="Dorado"></div>
+          <div class="swatch" style="background:#2563eb" onclick="setColor('#2563eb','#1d4ed8',this)" title="Azul"></div>
+          <div class="swatch" style="background:#16a34a" onclick="setColor('#16a34a','#15803d',this)" title="Verde"></div>
+          <div class="swatch" style="background:#dc2626" onclick="setColor('#dc2626','#b91c1c',this)" title="Rojo"></div>
+          <div class="swatch" style="background:#7c3aed" onclick="setColor('#7c3aed','#6d28d9',this)" title="Violeta"></div>
+          <div class="swatch" style="background:#0891b2" onclick="setColor('#0891b2','#0e7490',this)" title="Cyan"></div>
+          <div class="swatch" style="background:#374151" onclick="setColor('#374151','#111827',this)" title="Gris oscuro"></div>
+          <div class="swatch" style="background:#be185d" onclick="setColor('#be185d','#9d174d',this)" title="Rosa"></div>
+        </div>
+
+        <div class="slabel">📐 Tipografía y espaciado</div>
+        <div class="fg">
+          <label>Tamaño de texto base</label>
+          <select id="font-size" onchange="if(ST.data)render(ST.data)">
+            <option value="10">Compacto (10px)</option>
+            <option value="11" selected>Normal (11px)</option>
+            <option value="12">Amplio (12px)</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Espaciado entre secciones</label>
+          <select id="spacing" onchange="if(ST.data)render(ST.data)">
+            <option value="12px">Compacto</option>
+            <option value="18px" selected>Normal</option>
+            <option value="26px">Amplio</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PANEL CONFIG ── -->
+    <div class="panel" id="p-config">
+      <div class="pi">
+        <div class="slabel" style="margin-top:0">🤖 OpenRouter API</div>
+        <div class="apibox">
+          <div class="fg">
+            <label>API Key</label>
+            <div class="kw">
+              <input type="password" id="api-key" placeholder="sk-or-v1-..." autocomplete="off">
+              <button onclick="toggleKey()">👁</button>
+            </div>
+          </div>
+          <div class="fg">
+            <label>Modelo</label>
+            <select id="ai-model">
+              <option value="anthropic/claude-3.5-haiku">Claude 3.5 Haiku (rápido)</option>
+              <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet (premium)</option>
+              <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
+              <option value="openai/gpt-4o">GPT-4o</option>
+              <option value="google/gemini-flash-1.5">Gemini Flash 1.5</option>
+              <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 (gratis)</option>
+            </select>
+          </div>
+          <div class="api-note">
+            Tu API Key se usa solo en tu navegador, nunca sale de aquí.<br>
+            Obtén una gratis en <a href="https://openrouter.ai" target="_blank">openrouter.ai</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ACTION BAR ── -->
+    <div class="abar">
+      <div id="statusbar" class="statusbar">
+        <div class="spin" id="spin"></div>
+        <span id="status-txt"></span>
+      </div>
+      <button class="btn-gen" id="gen-btn" onclick="generate()">✨ Generar CV</button>
+      <button class="btn-sec" id="dl-btn" style="display:none" onclick="downloadPDF()">📥 Descargar PDF</button>
+    </div>
+
+  </aside>
+
+  <!-- ════ CANVAS ════ -->
+  <main class="canvas-wrap">
+
+    <div class="cvhdr">
+      <div class="cvhdr-title">Vista previa A4 · Editor</div>
+      <div class="cvhdr-actions" id="cvhdr-actions" style="display:none">
+        <button class="hbtn" id="edit-btn" onclick="toggleEdit()">✏️ Editar</button>
+        <button class="hbtn gold" onclick="downloadPDF()">📥 Descargar PDF</button>
+      </div>
+    </div>
+
+    <!-- Toolbar (shown in edit mode) -->
+    <div class="toolbar" id="toolbar">
+      <div class="tb-group">
+        <span class="tblbl">Formato</span>
+        <button class="tbtn" onclick="execFmt('bold')" title="Negrita"><b>B</b></button>
+        <button class="tbtn" onclick="execFmt('italic')" title="Cursiva"><i>I</i></button>
+        <button class="tbtn" onclick="execFmt('underline')" title="Subrayado"><u>U</u></button>
+      </div>
+      <div class="tb-sep"></div>
+      <div class="tb-group">
+        <span class="tblbl">Alinear</span>
+        <button class="tbtn" onclick="execFmt('justifyLeft')" title="Izquierda">⬅</button>
+        <button class="tbtn" onclick="execFmt('justifyCenter')" title="Centro">↔</button>
+        <button class="tbtn" onclick="execFmt('justifyRight')" title="Derecha">➡</button>
+      </div>
+      <div class="tb-sep"></div>
+      <div class="tb-group">
+        <span class="tblbl">Color</span>
+        <input type="color" class="tbtn-color" value="#1a1a2e" id="txt-color"
+          onchange="execFmt('foreColor',this.value)" title="Color de texto">
+      </div>
+      <div class="tb-sep"></div>
+      <div class="tb-group">
+        <button class="tbtn" onclick="execFmt('undo')">↩ Deshacer</button>
+        <button class="tbtn" onclick="execFmt('redo')">↪ Rehacer</button>
+      </div>
+    </div>
+
+    <!-- Placeholder -->
+    <div class="cv-placeholder" id="cv-placeholder">
+      <div class="cv-placeholder-ico">✦</div>
+      <p style="font-size:12.5px">Tu CV aparecerá aquí</p>
+      <p style="font-size:10.5px;margin-top:3px;opacity:.5">Pega tu info y pulsa Generar</p>
+    </div>
+
+    <!-- CV Output -->
+    <div id="cv-output"></div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+/* ══════════════════════════════════
+   GLOBAL STATE
+══════════════════════════════════ */
+var ST = {
+  tab: 'ia',
+  tmpl: 'formal',
+  photo: null,
+  accent: '#c9a84c',
+  accentDark: '#9a7d38',
+  skills: [],
+  exps: [],
+  edus: [],
+  ec: 0, dc: 0,
+  data: null,
+  editing: false
+};
+
+/* ══════ EXAMPLES ══════ */
+var EX = {
+  min: "Me llamo Carlos López, programador fullstack en Barcelona.\nEmail: carlos@dev.com | Tel: 612 345 678\n\nTrabajo en Acme Corp como Senior Dev desde 2022.\nAntes en FooBar Inc (2019-2022) como developer junior.\n\nEstudié Informática en UPC (2015-2019).\n\nSkills: JavaScript, React, Node.js, Python, Docker, Git.",
+  det: "DATOS:\nMaría González Ruiz — Product Manager Senior\nEmail: maria@email.com | Tel: +34 655 987 321\nMadrid, España | linkedin.com/in/mariagonzalez\n\nPERFIL:\n8 años liderando equipos de producto en startups tech. Especialista en OKRs, metodologías ágiles y análisis de datos.\n\nEXP:\n2021-Presente | Head of Product | TechStartup S.L., Madrid\n- Equipo de 12 personas (PMs, Diseño, Data)\n- NPS subió de 32 a 68 en 18 meses\n- Lanzamos 3 productos → 2M EUR ARR\n\n2018-2021 | Product Manager | MegaCorp, Madrid\n- Roadmap B2B con 500+ clientes enterprise\n- Reduje churn 25% con iniciativas de retención\n\nEDU:\n2014-2016 | MBA Digital | IE Business School\n2010-2014 | ADE | Universidad Complutense de Madrid\n\nSKILLS: Product Strategy, OKRs, SQL, Figma, Jira, Agile/Scrum, Inglés C1, Francés B2",
+  mes: "juan perez — freelance dev — madrid\njuandev@gmail.com | 677111222 | juanperez.dev\n\n5 años programando. Empecé en agencia (2018-2020) con wordpress y js, luego startup ecommerce (2020-2022) con react y node, ahora freelance desde 2022 con varios clientes haciendo frontend y algo de backend.\n\ncfgs daw 2018, cursos udemy/platzi\n\nhabilidades: react vue javascript css node mongodb algo de python, inglés b2"
+};
+
+function loadEx(k) {
+  document.getElementById('ia-text').value = EX[k];
+  updCC();
+}
+function updCC() {
+  document.getElementById('cc').textContent = document.getElementById('ia-text').value.length;
+}
+
+/* ══════ TABS ══════ */
+function showTab(id, btn) {
+  ST.tab = id;
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+  document.getElementById('p-' + id).classList.add('active');
+}
+
+/* ══════ TEMPLATE ══════ */
+function setTmpl(t, el) {
+  ST.tmpl = t;
+  document.querySelectorAll('.tcard').forEach(function(c) { c.classList.remove('active'); });
+  el.classList.add('active');
+  if (ST.data) render(ST.data);
+}
+
+/* ══════ COLOR ══════ */
+function setColor(c, d, el) {
+  ST.accent = c; ST.accentDark = d;
+  document.querySelectorAll('.swatch').forEach(function(s) { s.classList.remove('active'); });
+  el.classList.add('active');
+  if (ST.data) render(ST.data);
+}
+
+/* ══════ API KEY ══════ */
+function toggleKey() {
+  var i = document.getElementById('api-key');
+  i.type = i.type === 'password' ? 'text' : 'password';
+}
+
+/* ══════ PHOTO ══════ */
+function handlePhoto(e) {
+  var f = e.target.files[0]; if (!f) return;
+  var r = new FileReader();
+  r.onload = function(ev) {
+    ST.photo = ev.target.result;
+    var p = document.getElementById('photo-prev');
+    p.src = ST.photo; p.style.display = 'block';
+    document.getElementById('photo-ph').style.display = 'none';
+    if (ST.data) render(ST.data);
+  };
+  r.readAsDataURL(f);
+}
+
+/* ══════ DYNAMIC ENTRIES ══════ */
+function addExp() {
+  var id = ++ST.ec;
+  var c = document.getElementById('exp-list');
+  var d = document.createElement('div');
+  d.className = 'dentry'; d.id = 'exp' + id;
+  d.innerHTML =
+    '<button class="xbtn" onclick="removeEntry(\'exp' + id + '\',\'e\',' + id + ')">✕</button>' +
+    '<div class="g2">' +
+    '<input type="text" placeholder="Cargo *" data-k="role">' +
+    '<input type="text" placeholder="Empresa" data-k="company">' +
+    '</div>' +
+    '<div class="g2">' +
+    '<input type="text" placeholder="Período (2020–2024)" data-k="period">' +
+    '<input type="text" placeholder="Ubicación" data-k="location">' +
+    '</div>' +
+    '<textarea rows="2" placeholder="Descripción, logros, responsabilidades..." data-k="description"></textarea>';
+  c.appendChild(d);
+  var obj = { id: id, role: '', company: '', period: '', location: '', description: '' };
+  ST.exps.push(obj);
+  d.querySelectorAll('[data-k]').forEach(function(el) {
+    el.addEventListener('input', function() {
+      var o = ST.exps.find(function(x) { return x.id === id; });
+      if (o) o[el.dataset.k] = el.value;
+    });
+  });
+}
+
+function addEdu() {
+  var id = ++ST.dc;
+  var c = document.getElementById('edu-list');
+  var d = document.createElement('div');
+  d.className = 'dentry'; d.id = 'edu' + id;
+  d.innerHTML =
+    '<button class="xbtn" onclick="removeEntry(\'edu' + id + '\',\'d\',' + id + ')">✕</button>' +
+    '<div class="g2">' +
+    '<input type="text" placeholder="Título / Grado *" data-k="degree">' +
+    '<input type="text" placeholder="Institución" data-k="school">' +
+    '</div>' +
+    '<div class="g2">' +
+    '<input type="text" placeholder="Año / Período" data-k="period">' +
+    '<input type="text" placeholder="Ubicación" data-k="location">' +
+    '</div>';
+  c.appendChild(d);
+  var obj = { id: id, degree: '', school: '', period: '', location: '' };
+  ST.edus.push(obj);
+  d.querySelectorAll('[data-k]').forEach(function(el) {
+    el.addEventListener('input', function() {
+      var o = ST.edus.find(function(x) { return x.id === id; });
+      if (o) o[el.dataset.k] = el.value;
+    });
+  });
+}
+
+function removeEntry(domId, type, id) {
+  var el = document.getElementById(domId);
+  if (el) el.remove();
+  if (type === 'e') ST.exps = ST.exps.filter(function(x) { return x.id !== id; });
+  else ST.edus = ST.edus.filter(function(x) { return x.id !== id; });
+}
+
+function addSkill() {
+  var inp = document.getElementById('skill-input');
+  var v = inp.value.trim();
+  if (!v || ST.skills.indexOf(v) !== -1) return;
+  ST.skills.push(v); inp.value = '';
+  renderChips();
+}
+function removeSkill(s) {
+  ST.skills = ST.skills.filter(function(x) { return x !== s; });
+  renderChips();
+}
+function renderChips() {
+  document.getElementById('skill-chips').innerHTML = ST.skills.map(function(s) {
+    var safe = s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    return '<div class="chip">' + H(s) + '<button onclick="removeSkill(\'' + safe + '\')">✕</button></div>';
+  }).join('');
+}
+
+function collectManual() {
+  return {
+    name: document.getElementById('m-name').value.trim(),
+    title: document.getElementById('m-title').value.trim(),
+    email: document.getElementById('m-email').value.trim(),
+    phone: document.getElementById('m-phone').value.trim(),
+    location: document.getElementById('m-loc').value.trim(),
+    linkedin: document.getElementById('m-web').value.trim(),
+    profile: document.getElementById('m-profile').value.trim(),
+    experiences: ST.exps.filter(function(e) { return e.role; }),
+    educations: ST.edus.filter(function(e) { return e.degree; }),
+    skills: ST.skills.slice()
+  };
+}
+
+/* ══════════════════════════════════
+   GENERATE
+══════════════════════════════════ */
+function generate() {
+  var btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  var p;
+
+  if (ST.tab === 'ia') {
+    var txt = document.getElementById('ia-text').value.trim();
+    if (txt.length < 20) { toast('Escribe más información para continuar', 'err'); btn.disabled = false; return; }
+    var key = document.getElementById('api-key').value.trim();
+    if (!key) { toast('Agrega tu API Key en ⚙️ Config primero', 'err'); btn.disabled = false; return; }
+    setStatus('ld', '🤖 Analizando con IA...');
+    p = aiParse(txt, key).then(function(d) {
+      showParsed(d);
+      setStatus('ok', '✅ Información estructurada');
+      return d;
+    });
+  } else if (ST.tab === 'manual') {
+    var d = collectManual();
+    if (!d.name) { toast('El nombre es obligatorio', 'err'); btn.disabled = false; return; }
+    var key2 = document.getElementById('api-key').value.trim();
+    if (key2 && d.profile) {
+      setStatus('ld', '✨ Mejorando redacción...');
+      p = aiImprove(d, key2)
+        .then(function(x) { setStatus('ok', '✅ Listo'); return x; })
+        .catch(function() { setStatus('ok', '✅ Listo'); return d; });
+    } else {
+      setStatus('ok', '✅ CV listo');
+      p = Promise.resolve(d);
+    }
+  } else {
+    toast('Usa la pestaña IA o Manual', 'err'); btn.disabled = false; return;
+  }
+
+  p.then(function(d) {
+    ST.data = d;
+    render(d);
+    document.getElementById('dl-btn').style.display = 'flex';
+    document.getElementById('cv-placeholder').style.display = 'none';
+    document.getElementById('cv-output').style.display = 'block';
+    document.getElementById('cvhdr-actions').style.display = 'flex';
+    toast('¡CV generado! Haz click en Editar para modificarlo', 'ok');
+  }).catch(function(err) {
+    setStatus('err', '❌ ' + err.message);
+    toast(err.message, 'err');
+  }).finally(function() { btn.disabled = false; });
+}
+
+/* ══════════════════════════════════
+   AI CALLS
+══════════════════════════════════ */
+function aiParse(txt, key) {
+  var model = document.getElementById('ai-model').value;
+  var prompt = [
+    'Eres un experto en redacción de currículums profesionales.',
+    'El usuario te da texto libre desordenado con su información.',
+    '',
+    'Tu tarea:',
+    '1. Extraer y estructurar TODA la información disponible',
+    '2. Mejorar y profesionalizar la redacción',
+    '3. Inferir datos razonables cuando sea evidente',
+    '4. El perfil debe tener 3-4 oraciones impactantes y genuinas',
+    '',
+    'INFORMACIÓN DEL USUARIO:',
+    '"""',
+    txt,
+    '"""',
+    '',
+    'Devuelve ÚNICAMENTE un objeto JSON válido, sin markdown, sin backticks, sin texto extra:',
+    '{"name":"","title":"","email":"","phone":"","location":"","linkedin":"","profile":"","experiences":[{"role":"","company":"","period":"","location":"","description":"usa • para separar 2-3 logros clave"}],"educations":[{"degree":"","school":"","period":"","location":""}],"skills":["s1","s2"]}',
+    '',
+    'Reglas: experiencias de más reciente a más antigua. Perfil humano, no genérico.'
+  ].join('\n');
+
+  return fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + key,
+      'HTTP-Referer': location.href,
+      'X-Title': 'CV Pro'
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 2500,
+      temperature: 0.65
+    })
+  }).then(function(res) {
+    if (!res.ok) {
+      return res.json().catch(function() { return {}; }).then(function(e) {
+        throw new Error((e.error && e.error.message) ? e.error.message : 'Error de API ' + res.status);
+      });
+    }
+    return res.json();
+  }).then(function(r) {
+    var c = (r.choices && r.choices[0] && r.choices[0].message) ? r.choices[0].message.content : '';
+    var clean = c.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    try { return JSON.parse(clean); }
+    catch (e) { throw new Error('Respuesta inesperada de la IA. Intenta de nuevo.'); }
+  });
+}
+
+function aiImprove(d, key) {
+  var model = document.getElementById('ai-model').value;
+  var prompt = 'Mejora profesionalmente la redacción del perfil y descripciones. No inventes datos.\n\nPerfil: ' + d.profile + '\nExp: ' + JSON.stringify(d.experiences) + '\n\nDevuelve SOLO JSON sin markdown:\n{"profile":"mejorado","experiences":[{"role":"","company":"","period":"","location":"","description":"mejorada con • para puntos"}]}';
+  return fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': location.href, 'X-Title': 'CV Pro' },
+    body: JSON.stringify({ model: model, messages: [{ role: 'user', content: prompt }], max_tokens: 1500, temperature: 0.6 })
+  }).then(function(r) { return r.json(); }).then(function(r) {
+    var c = (r.choices && r.choices[0] && r.choices[0].message) ? r.choices[0].message.content : '';
+    var clean = c.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    try { var im = JSON.parse(clean); return Object.assign({}, d, { profile: im.profile || d.profile, experiences: im.experiences || d.experiences }); }
+    catch (e) { return d; }
+  }).catch(function() { return d; });
+}
+
+/* ══════════════════════════════════
+   PARSED SUMMARY BOX
+══════════════════════════════════ */
+function showParsed(d) {
+  var box = document.getElementById('parsed-box');
+  var cnt = document.getElementById('parsed-inner');
+  box.classList.add('active');
+  var eS = (d.experiences || []).map(function(e) {
+    return '<li><strong>' + H(e.role) + '</strong>' + (e.company ? ' · ' + H(e.company) : '') + (e.period ? ' (' + H(e.period) + ')' : '') + '</li>';
+  }).join('');
+  var dS = (d.educations || []).map(function(e) {
+    return '<li><strong>' + H(e.degree) + '</strong>' + (e.school ? ' · ' + H(e.school) : '') + '</li>';
+  }).join('');
+  var html = '';
+  if (d.name) html += '<div class="prow"><div class="pkey">👤 Nombre</div><div class="pval">' + H(d.name) + (d.title ? ' — ' + H(d.title) : '') + '</div></div>';
+  var ctc = [d.email, d.phone, d.location].filter(Boolean).map(H).join(' · ');
+  if (ctc) html += '<div class="prow"><div class="pkey">📬 Contacto</div><div class="pval">' + ctc + '</div></div>';
+  if (d.profile) html += '<div class="prow"><div class="pkey">📝 Perfil</div><div class="pval">' + H(d.profile.substring(0, 140)) + (d.profile.length > 140 ? '…' : '') + '</div></div>';
+  if (eS) html += '<div class="prow"><div class="pkey">💼 Exp. (' + (d.experiences || []).length + ')</div><div class="pval"><ul>' + eS + '</ul></div></div>';
+  if (dS) html += '<div class="prow"><div class="pkey">🎓 Edu. (' + (d.educations || []).length + ')</div><div class="pval"><ul>' + dS + '</ul></div></div>';
+  if (d.skills && d.skills.length) html += '<div class="prow"><div class="pkey">⚡ Skills</div><div class="pval">' + d.skills.map(H).join(', ') + '</div></div>';
+  cnt.innerHTML = html;
+}
+
+/* ══════════════════════════════════
+   RENDER — inline styles only
+══════════════════════════════════ */
+function render(data) {
+  var out = document.getElementById('cv-output');
+  out.innerHTML = '';
+  var shell = document.createElement('div');
+  shell.className = 'cv-shell';
+  var fs = parseInt(document.getElementById('font-size').value) || 11;
+  var sp = document.getElementById('spacing').value || '18px';
+  var inner;
+  if (ST.tmpl === 'creative') inner = buildCreative(data, fs, sp);
+  else if (ST.tmpl === 'executive') inner = buildExecutive(data, fs, sp);
+  else inner = buildFormal(data, fs, sp);
+  shell.appendChild(inner);
+  out.appendChild(shell);
+  applyEditState();
+}
+
+/* ══════════════════════════════════
+   HELPERS
+══════════════════════════════════ */
+function H(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function bullets(s) {
+  if (!s) return '';
+  if (s.indexOf('•') !== -1) {
+    return s.split('•').map(function(p) { return p.trim(); }).filter(Boolean).map(function(p) {
+      return '<div style="padding-left:11px;position:relative;margin-bottom:3px"><span style="position:absolute;left:0">•</span>' + H(p) + '</div>';
+    }).join('');
+  }
+  return H(s);
+}
+
+/* Create editable span */
+function ed(tag, style, text) {
+  var el = document.createElement(tag);
+  el.style.cssText = style;
+  el.setAttribute('contenteditable', 'false');
+  if (text !== undefined && text !== null) el.textContent = String(text);
+  return el;
+}
+
+/* ══════════════════════════════════
+   TEMPLATE: FORMAL
+══════════════════════════════════ */
+function buildFormal(data, fs, sp) {
+  var ac = ST.accent, acd = ST.accentDark;
+  var root = document.createElement('div');
+  root.style.cssText = 'display:flex;width:794px;min-height:1122px;font-family:Georgia,serif;background:#fff;';
+
+  /* ── Sidebar ── */
+  var sb = document.createElement('div');
+  sb.style.cssText = 'width:210px;flex-shrink:0;background:#1c1c2e;padding:30px 18px;display:flex;flex-direction:column;min-height:1122px;';
+
+  /* Photo */
+  if (ST.photo) {
+    var img = document.createElement('img');
+    img.src = ST.photo;
+    img.style.cssText = 'width:94px;height:94px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 14px;border:3px solid rgba(255,255,255,0.12);';
+    sb.appendChild(img);
+  } else {
+    var phi = document.createElement('div');
+    phi.style.cssText = 'width:94px;height:94px;border-radius:50%;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 14px;';
+    phi.textContent = '👤';
+    sb.appendChild(phi);
+  }
+
+  var sbn = ed('div', 'font-size:' + (fs + 3) + 'px;font-weight:700;color:#fff;text-align:center;line-height:1.3;margin-bottom:4px;', data.name);
+  var sbt = ed('div', 'font-size:' + (fs - 2) + 'px;color:rgba(255,255,255,0.38);text-align:center;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:18px;', data.title);
+  sb.appendChild(sbn); sb.appendChild(sbt);
+
+  function sbSec(title) {
+    var s = document.createElement('div'); s.style.cssText = 'margin-bottom:' + sp + ';';
+    var t = document.createElement('div');
+    t.style.cssText = 'font-size:' + (fs - 3) + 'px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:' + ac + ';margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,0.07);font-family:Arial,sans-serif;';
+    t.textContent = title; s.appendChild(t); sb.appendChild(s); return s;
+  }
+
+  /* Contacts */
+  var contacts = [[data.email, '✉'], [data.phone, '☎'], [data.location, '📍'], [data.linkedin, '🔗']].filter(function(p) { return p[0]; });
+  if (contacts.length) {
+    var cs = sbSec('Contacto');
+    contacts.forEach(function(p) {
+      var row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:flex-start;gap:6px;margin-bottom:6px;';
+      var ico = document.createElement('span'); ico.style.cssText = 'font-size:9px;width:13px;text-align:center;flex-shrink:0;margin-top:2px;color:rgba(255,255,255,0.5);'; ico.textContent = p[1];
+      var tx = ed('span', 'font-size:' + (fs - 2) + 'px;color:rgba(255,255,255,0.65);word-break:break-all;line-height:1.45;font-family:Arial,sans-serif;', p[0]);
+      row.appendChild(ico); row.appendChild(tx); cs.appendChild(row);
+    });
+  }
+
+  /* Skills bars */
+  if ((data.skills || []).length) {
+    var ss = sbSec('Habilidades');
+    (data.skills).forEach(function(s, i) {
+      var w = [85, 75, 90, 70, 82, 88, 72, 80][i % 8];
+      var it = document.createElement('div'); it.style.cssText = 'margin-bottom:7px;';
+      var lbl = ed('div', 'font-size:' + (fs - 2) + 'px;color:rgba(255,255,255,0.72);margin-bottom:3px;font-family:Arial,sans-serif;', s);
+      var bg = document.createElement('div'); bg.style.cssText = 'height:2px;background:rgba(255,255,255,0.08);border-radius:2px;';
+      var fill = document.createElement('div'); fill.style.cssText = 'height:2px;width:' + w + '%;background:' + ac + ';border-radius:2px;';
+      bg.appendChild(fill); it.appendChild(lbl); it.appendChild(bg); ss.appendChild(it);
+    });
+  }
+
+  var pageNum = document.createElement('div');
+  pageNum.style.cssText = 'margin-top:auto;padding-top:20px;font-size:9px;color:rgba(255,255,255,0.2);text-align:center;font-family:Arial,sans-serif;';
+  pageNum.textContent = '1';
+  sb.appendChild(pageNum);
+
+  /* ── Main ── */
+  var main = document.createElement('div');
+  main.style.cssText = 'flex:1;padding:30px 24px;';
+
+  var mn = ed('div', 'font-size:' + (fs + 13) + 'px;font-weight:700;color:#1c1c2e;line-height:1.15;margin-bottom:2px;', data.name);
+  var mt = ed('div', 'font-size:' + (fs - 1) + 'px;color:' + ac + ';letter-spacing:1.5px;text-transform:uppercase;margin-bottom:11px;font-weight:700;font-family:Arial,sans-serif;', data.title);
+  var dv = document.createElement('div'); dv.style.cssText = 'height:2px;background:linear-gradient(to right,#1c1c2e 40%,transparent);margin-bottom:' + sp + ';';
+  main.appendChild(mn); main.appendChild(mt); main.appendChild(dv);
+
+  function mainSec(title, content) {
+    var wrap = document.createElement('div'); wrap.style.cssText = 'margin-bottom:' + sp + ';';
+    var ttl = document.createElement('div');
+    ttl.style.cssText = 'font-size:' + (fs - 1) + 'px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#1c1c2e;margin-bottom:9px;display:flex;align-items:center;gap:8px;font-family:Arial,sans-serif;';
+    ttl.innerHTML = H(title) + '<div style="flex:1;height:1px;background:#e8e8f0;"></div>';
+    wrap.appendChild(ttl); wrap.appendChild(content); main.appendChild(wrap);
+  }
+
+  if (data.profile) {
+    var pd = ed('div', 'font-size:' + fs + 'px;line-height:1.75;color:#44446a;font-family:Arial,sans-serif;', data.profile);
+    mainSec('Perfil Profesional', pd);
+  }
+
+  if ((data.experiences || []).length) {
+    var ew = document.createElement('div');
+    data.experiences.forEach(function(e, i) {
+      var it = document.createElement('div');
+      var border = i < data.experiences.length - 1 ? 'border-bottom:1px solid #f0f0f8;padding-bottom:11px;' : '';
+      it.style.cssText = 'margin-bottom:11px;' + border;
+      var hdr = document.createElement('div'); hdr.style.cssText = 'display:flex;justify-content:space-between;align-items:baseline;';
+      var role = ed('span', 'font-size:' + (fs + 1) + 'px;font-weight:800;color:#1c1c2e;', e.role);
+      var date = ed('span', 'font-size:' + (fs - 2) + 'px;color:' + ac + ';font-weight:700;white-space:nowrap;margin-left:6px;font-family:Arial,sans-serif;flex-shrink:0;', e.period);
+      hdr.appendChild(role); hdr.appendChild(date);
+      var co = ed('div', 'font-size:' + fs + 'px;color:#66668a;margin-bottom:2px;font-style:italic;font-family:Arial,sans-serif;', (e.company || '') + (e.location ? ' · ' + e.location : ''));
+      var desc = document.createElement('div'); desc.style.cssText = 'font-size:' + (fs - 1) + 'px;line-height:1.65;color:#55557a;font-family:Arial,sans-serif;';
+      desc.setAttribute('contenteditable', 'false'); desc.innerHTML = bullets(e.description);
+      it.appendChild(hdr); it.appendChild(co); it.appendChild(desc); ew.appendChild(it);
+    });
+    mainSec('Experiencia', ew);
+  }
+
+  if ((data.educations || []).length) {
+    var dw = document.createElement('div');
+    data.educations.forEach(function(e) {
+      var it = document.createElement('div'); it.style.cssText = 'margin-bottom:9px;';
+      var deg = ed('div', 'font-size:' + (fs + 1) + 'px;font-weight:800;color:#1c1c2e;', e.degree);
+      var sch = ed('div', 'font-size:' + fs + 'px;color:#66668a;font-style:italic;font-family:Arial,sans-serif;', e.school);
+      var yr = ed('div', 'font-size:' + (fs - 1) + 'px;color:' + ac + ';font-family:Arial,sans-serif;', e.period);
+      it.appendChild(deg); it.appendChild(sch); it.appendChild(yr); dw.appendChild(it);
+    });
+    mainSec('Educación', dw);
+  }
+
+  root.appendChild(sb); root.appendChild(main);
+  return root;
+}
+
+/* ══════════════════════════════════
+   TEMPLATE: CREATIVE
+══════════════════════════════════ */
+function buildCreative(data, fs, sp) {
+  var ac = ST.accent, acd = ST.accentDark;
+  var root = document.createElement('div');
+  root.style.cssText = 'width:794px;min-height:1122px;font-family:Arial,sans-serif;background:#fff;position:relative;';
+
+  /* Top bar */
+  var top = document.createElement('div');
+  top.style.cssText = 'background:linear-gradient(135deg,' + ac + ',' + acd + ');padding:28px 30px;display:flex;align-items:center;gap:20px;';
+
+  if (ST.photo) {
+    var img = document.createElement('img'); img.src = ST.photo;
+    img.style.cssText = 'width:84px;height:84px;border-radius:14px;object-fit:cover;border:3px solid rgba(255,255,255,0.25);flex-shrink:0;';
+    top.appendChild(img);
+  } else {
+    var phi = document.createElement('div');
+    phi.style.cssText = 'width:84px;height:84px;border-radius:14px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;';
+    phi.textContent = '👤'; top.appendChild(phi);
+  }
+
+  var ti = document.createElement('div'); ti.style.cssText = 'flex:1;';
+  var tn = ed('div', 'font-size:' + (fs + 11) + 'px;font-weight:800;color:#fff;margin-bottom:2px;letter-spacing:-.2px;', data.name);
+  var tt = ed('div', 'font-size:' + (fs + 1) + 'px;color:rgba(255,255,255,0.8);margin-bottom:8px;', data.title);
+  var cc = document.createElement('div'); cc.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;';
+  [[data.email, '✉'], [data.phone, '☎'], [data.location, '📍'], [data.linkedin, '🔗']].forEach(function(p) {
+    if (!p[0]) return;
+    var c = ed('div', 'font-size:' + (fs - 1) + 'px;color:rgba(255,255,255,0.88);', p[1] + ' ' + p[0]);
+    cc.appendChild(c);
+  });
+  ti.appendChild(tn); ti.appendChild(tt); ti.appendChild(cc); top.appendChild(ti); root.appendChild(top);
+
+  /* Body */
+  var body = document.createElement('div');
+  body.style.cssText = 'display:grid;grid-template-columns:1fr 240px;padding:22px 26px;';
+  var left = document.createElement('div'); left.style.cssText = 'padding-right:20px;border-right:1px solid #eeeef8;';
+  var right = document.createElement('div'); right.style.cssText = 'padding-left:20px;';
+
+  function cSec(title, el, parent) {
+    var sec = document.createElement('div'); sec.style.cssText = 'margin-bottom:' + sp + ';';
+    var ttl = document.createElement('div');
+    ttl.style.cssText = 'font-size:' + (fs - 2) + 'px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:' + ac + ';margin-bottom:8px;display:flex;align-items:center;gap:6px;';
+    var bar = document.createElement('div'); bar.style.cssText = 'width:12px;height:3px;background:' + ac + ';border-radius:2px;flex-shrink:0;';
+    ttl.appendChild(bar); ttl.appendChild(document.createTextNode(title));
+    sec.appendChild(ttl); sec.appendChild(el); (parent || left).appendChild(sec);
+  }
+
+  if (data.profile) { var pd = ed('div', 'font-size:' + fs + 'px;line-height:1.75;color:#444;', data.profile); cSec('Sobre mí', pd); }
+
+  if ((data.experiences || []).length) {
+    var ew = document.createElement('div');
+    data.experiences.forEach(function(e) {
+      var it = document.createElement('div'); it.style.cssText = 'margin-bottom:11px;padding-left:11px;border-left:2px solid #eeeef8;position:relative;';
+      var dot = document.createElement('div'); dot.style.cssText = 'position:absolute;left:-5px;top:4px;width:8px;height:8px;border-radius:50%;background:' + ac + ';';
+      var role = ed('div', 'font-size:' + (fs + 1) + 'px;font-weight:800;color:#1a1a2e;', e.role);
+      var meta = ed('div', 'font-size:' + (fs - 1) + 'px;color:#888;margin-bottom:3px;', [e.company, e.period, e.location].filter(Boolean).join(' · '));
+      var desc = document.createElement('div'); desc.style.cssText = 'font-size:' + (fs - 1) + 'px;line-height:1.65;color:#555;';
+      desc.setAttribute('contenteditable', 'false'); desc.innerHTML = bullets(e.description);
+      it.appendChild(dot); it.appendChild(role); it.appendChild(meta); it.appendChild(desc); ew.appendChild(it);
+    });
+    cSec('Experiencia', ew);
+  }
+
+  if ((data.educations || []).length) {
+    var dw = document.createElement('div');
+    data.educations.forEach(function(e) {
+      var it = document.createElement('div'); it.style.cssText = 'margin-bottom:9px;';
+      var deg = ed('div', 'font-size:' + (fs + 1) + 'px;font-weight:800;color:#1a1a2e;', e.degree);
+      var sch = ed('div', 'font-size:' + (fs - 1) + 'px;color:#777;', e.school);
+      var yr = ed('div', 'font-size:' + (fs - 1) + 'px;color:' + ac + ';font-weight:700;', e.period);
+      it.appendChild(deg); it.appendChild(sch); it.appendChild(yr); dw.appendChild(it);
+    });
+    cSec('Educación', dw, right);
+  }
+
+  if ((data.skills || []).length) {
+    var sw = document.createElement('div'); sw.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;';
+    data.skills.forEach(function(s) {
+      var tag = document.createElement('span');
+      tag.style.cssText = 'display:inline-block;background:' + ac + '18;border:1px solid ' + ac + '44;border-radius:100px;padding:2px 9px;font-size:' + (fs - 2) + 'px;color:' + ac + ';font-weight:700;margin:1px;';
+      tag.setAttribute('contenteditable', 'false'); tag.textContent = s; sw.appendChild(tag);
+    });
+    cSec('Habilidades', sw, right);
+  }
+
+  body.appendChild(left); body.appendChild(right); root.appendChild(body);
+  var pn = document.createElement('div'); pn.style.cssText = 'position:absolute;bottom:12px;right:14px;font-size:9px;color:#ccc;'; pn.textContent = '1'; root.appendChild(pn);
+  return root;
+}
+
+/* ══════════════════════════════════
+   TEMPLATE: EXECUTIVE
+══════════════════════════════════ */
+function buildExecutive(data, fs, sp) {
+  var ac = ST.accent;
+  var root = document.createElement('div');
+  root.style.cssText = 'width:794px;min-height:1122px;font-family:Georgia,serif;background:#fff;color:#1c1c1c;position:relative;';
+
+  /* Header */
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'padding:38px 42px 20px;border-bottom:1px solid #e8e8e0;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;';
+  var hl = document.createElement('div'); hl.style.cssText = 'flex:1;';
+  var en = ed('div', 'font-size:' + (fs + 22) + 'px;font-weight:300;letter-spacing:-1px;color:#1c1c1c;line-height:1.1;margin-bottom:6px;', data.name);
+  var et = ed('div', 'font-family:Arial,sans-serif;font-size:' + (fs - 2) + 'px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#aaa;', data.title);
+  hl.appendChild(en); hl.appendChild(et); hdr.appendChild(hl);
+
+  if (ST.photo) {
+    var img = document.createElement('img'); img.src = ST.photo;
+    img.style.cssText = 'width:78px;height:78px;border-radius:4px;object-fit:cover;border:1px solid #e0e0d8;flex-shrink:0;';
+    hdr.appendChild(img);
+  } else {
+    var phi = document.createElement('div');
+    phi.style.cssText = 'width:78px;height:78px;border-radius:4px;border:1px solid #e0e0d8;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;background:#f9f9f7;';
+    phi.textContent = '👤'; hdr.appendChild(phi);
+  }
+  root.appendChild(hdr);
+
+  /* Contact strip */
+  var ctcs = [[data.email, '✉'], [data.phone, '☎'], [data.location, '📍'], [data.linkedin, '🔗']].filter(function(p) { return p[0]; });
+  if (ctcs.length) {
+    var cb = document.createElement('div'); cb.style.cssText = 'display:flex;gap:16px;padding:10px 42px;background:#f9f9f7;border-bottom:1px solid #e8e8e0;flex-wrap:wrap;';
+    ctcs.forEach(function(p) {
+      var c = ed('div', 'font-family:Arial,sans-serif;font-size:' + (fs - 2) + 'px;color:#777;', p[1] + ' ' + p[0]);
+      cb.appendChild(c);
+    });
+    root.appendChild(cb);
+  }
+
+  /* Body */
+  var body = document.createElement('div'); body.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;padding:24px 42px;';
+  var bl = document.createElement('div'); bl.style.cssText = 'padding-right:24px;border-right:1px solid #e8e8e0;';
+  var br = document.createElement('div'); br.style.cssText = 'padding-left:24px;';
+
+  function eSec(title, el, parent) {
+    var sec = document.createElement('div'); sec.style.cssText = 'margin-bottom:' + sp + ';';
+    var ttl = document.createElement('div');
+    ttl.style.cssText = 'font-family:Arial,sans-serif;font-size:' + (fs - 3) + 'px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#aaa;margin-bottom:10px;';
+    ttl.textContent = title; sec.appendChild(ttl); sec.appendChild(el); (parent || bl).appendChild(sec);
+  }
+
+  if (data.profile) { var pd = ed('div', 'font-size:' + fs + 'px;line-height:1.85;color:#444;font-weight:300;', data.profile); eSec('Perfil', pd); }
+
+  if ((data.experiences || []).length) {
+    var ew = document.createElement('div');
+    data.experiences.forEach(function(e) {
+      var it = document.createElement('div'); it.style.cssText = 'margin-bottom:12px;';
+      var role = ed('div', 'font-size:' + (fs + 2) + 'px;font-weight:700;color:#1c1c1c;', e.role);
+      var meta = ed('div', 'font-family:Arial,sans-serif;font-size:' + (fs - 3) + 'px;letter-spacing:1px;color:#bbb;text-transform:uppercase;margin-bottom:3px;', [e.company, e.period, e.location].filter(Boolean).join(' · '));
+      var desc = document.createElement('div'); desc.style.cssText = 'font-size:' + (fs - 1) + 'px;line-height:1.75;color:#555;font-weight:300;';
+      desc.setAttribute('contenteditable', 'false'); desc.innerHTML = bullets(e.description);
+      it.appendChild(role); it.appendChild(meta); it.appendChild(desc); ew.appendChild(it);
+    });
+    eSec('Experiencia', ew);
+  }
+
+  if ((data.educations || []).length) {
+    var dw = document.createElement('div');
+    data.educations.forEach(function(e) {
+      var it = document.createElement('div'); it.style.cssText = 'margin-bottom:9px;';
+      var deg = ed('div', 'font-size:' + (fs + 1) + 'px;font-weight:700;color:#1c1c1c;', e.degree);
+      var sch = ed('div', 'font-family:Arial,sans-serif;font-size:' + (fs - 1) + 'px;color:#999;', e.school + (e.location ? ' · ' + e.location : ''));
+      var yr = ed('div', 'font-family:Arial,sans-serif;font-size:' + (fs - 2) + 'px;color:#bbb;', e.period);
+      it.appendChild(deg); it.appendChild(sch); it.appendChild(yr); dw.appendChild(it);
+    });
+    eSec('Formación', dw, br);
+  }
+
+  if ((data.skills || []).length) {
+    var sw = document.createElement('div');
+    data.skills.forEach(function(s) {
+      var d = document.createElement('div'); d.style.cssText = 'font-family:Arial,sans-serif;font-size:' + (fs - 1) + 'px;color:#666;margin-bottom:4px;display:flex;align-items:center;gap:5px;';
+      var dash = document.createElement('span'); dash.style.cssText = 'color:#ccc;'; dash.textContent = '—';
+      var tx = ed('span', '', s);
+      d.appendChild(dash); d.appendChild(tx); sw.appendChild(d);
+    });
+    eSec('Competencias', sw, br);
+  }
+
+  body.appendChild(bl); body.appendChild(br); root.appendChild(body);
+  var pn = document.createElement('div'); pn.style.cssText = 'position:absolute;bottom:12px;right:16px;font-family:Arial,sans-serif;font-size:9px;color:#ddd;'; pn.textContent = '1'; root.appendChild(pn);
+  return root;
+}
+
+/* ══════════════════════════════════
+   EDIT MODE
+══════════════════════════════════ */
+function toggleEdit() {
+  ST.editing = !ST.editing;
+  applyEditState();
+  var btn = document.getElementById('edit-btn');
+  var tb = document.getElementById('toolbar');
+  btn.textContent = ST.editing ? '🔒 Bloquear' : '✏️ Editar';
+  btn.classList.toggle('edit-on', ST.editing);
+  tb.classList.toggle('show', ST.editing);
+  if (ST.editing) toast('Click en cualquier texto para editar', 'ok');
+}
+
+function applyEditState() {
+  var all = document.querySelectorAll('#cv-output [contenteditable]');
+  all.forEach(function(el) {
+    el.setAttribute('contenteditable', ST.editing ? 'true' : 'false');
+  });
+}
+
+function execFmt(cmd, val) {
+  document.execCommand(cmd, false, val || null);
+}
+
+/* ══════════════════════════════════
+   DOWNLOAD PDF — fixed
+══════════════════════════════════ */
+function downloadPDF() {
+  var out = document.getElementById('cv-output');
+  var shell = out.querySelector('.cv-shell');
+  if (!shell) { toast('Genera el CV primero', 'err'); return; }
+
+  /* Temporarily disable editing */
+  var wasEditing = ST.editing;
+  if (wasEditing) { ST.editing = false; applyEditState(); }
+
+  var dlBtn = document.getElementById('dl-btn');
+  var dlBtnOrig = dlBtn.innerHTML;
+  dlBtn.innerHTML = '⏳ Generando...'; dlBtn.disabled = true;
+
+  /* Get inner CV element (first child of shell) */
+  var cvEl = shell.firstChild;
+
+  /* Force exact 794px width for capture */
+  cvEl.style.width = '794px';
+
+  setTimeout(function() {
+    var name = ((ST.data && ST.data.name) || 'curriculum').replace(/\s+/g, '_');
+    html2pdf()
+      .set({
+        margin: 0,
+        filename: 'CV_' + name + '.pdf',
+        image: { type: 'jpeg', quality: 0.97 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          width: 794,
+          windowWidth: 794,
+          scrollX: 0,
+          scrollY: 0
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      })
+      .from(cvEl)
+      .save()
+      .then(function() { toast('✅ PDF descargado correctamente', 'ok'); })
+      .catch(function(e) { console.error(e); toast('Error generando PDF. Intenta de nuevo.', 'err'); })
+      .finally(function() {
+        if (wasEditing) { ST.editing = true; applyEditState(); }
+        dlBtn.innerHTML = dlBtnOrig; dlBtn.disabled = false;
+      });
+  }, 400);
+}
+
+/* ══════════════════════════════════
+   STATUS & TOAST
+══════════════════════════════════ */
+function setStatus(type, msg) {
+  var el = document.getElementById('statusbar');
+  var sp = document.getElementById('spin');
+  var tx = document.getElementById('status-txt');
+  el.className = 'statusbar show ' + type;
+  sp.className = 'spin' + (type === 'ld' ? ' show' : '');
+  tx.textContent = msg;
+  if (type !== 'ld') setTimeout(function() { el.classList.remove('show'); }, 4500);
+}
+
+function toast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = (type === 'ok' ? '✅ ' : '❌ ') + msg;
+  t.className = 'toast show ' + type;
+  setTimeout(function() { t.className = 'toast'; }, 3500);
+}
+</script>
+</body>
+</html>
